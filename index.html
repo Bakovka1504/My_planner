@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Планировщик задач</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <a class="logo" href="#" aria-label="Планировщик задач">
+          <span class="logo-mark" aria-hidden="true">✓</span>
+          <span>Планировщик задач</span>
+        </a>
+
+        <nav class="header-actions" aria-label="Основные действия">
+          <button class="button button-primary" id="add-task-button" type="button">Добавить задачу</button>
+          <button class="button" id="export-button" type="button">Экспорт</button>
+          <button class="button" id="import-button" type="button">Импорт</button>
+          <input class="visually-hidden" id="import-file-input" type="file" accept="application/json,.json">
+          <button class="button" id="enable-notifications-button" type="button">Включить уведомления</button>
+          <span class="notification-status" id="notification-status" aria-label="Уведомления выключены">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span class="status-text">Проверка</span>
+          </span>
+        </nav>
+      </header>
+
+      <main>
+        <p class="app-alert" id="missed-reminders-alert" role="status" hidden></p>
+
+        <section class="filters-panel" aria-label="Фильтры задач">
+          <label class="search-field">
+            <span class="visually-hidden">Поиск задач</span>
+            <input type="text" id="search" placeholder="Поиск по задачам">
+          </label>
+
+          <div class="filter-controls" aria-label="Дополнительные фильтры">
+            <select aria-label="Статус">
+              <option>Все статусы</option>
+              <option>Активные</option>
+              <option>Завершенные</option>
+            </select>
+            <select aria-label="Приоритет">
+              <option>Любой приоритет</option>
+              <option>Высокий</option>
+              <option>Средний</option>
+              <option>Низкий</option>
+            </select>
+          </div>
+
+          <div class="quick-tabs" aria-label="Быстрые вкладки">
+            <button class="tab is-active" type="button" data-filter="all">Все задачи</button>
+            <button class="tab" type="button" data-filter="in-progress">В работе</button>
+            <button class="tab" type="button" data-filter="high">Высокий приоритет</button>
+          </div>
+        </section>
+
+        <section class="workspace" aria-label="Рабочая область задач">
+          <p class="workspace-empty" id="workspace-empty" hidden>Задач пока нет. Добавьте первую задачу.</p>
+
+          <article class="task-group" aria-labelledby="overdue-title">
+            <header class="group-header">
+              <h2 id="overdue-title">Просроченные</h2>
+              <span class="task-count">0</span>
+            </header>
+            <div class="task-list" data-group="overdue">
+              <p class="empty-state">Задач пока нет. Добавьте первую задачу.</p>
+            </div>
+          </article>
+
+          <article class="task-group" aria-labelledby="today-title">
+            <header class="group-header">
+              <h2 id="today-title">Сегодня</h2>
+              <span class="task-count">0</span>
+            </header>
+            <div class="task-list" data-group="today">
+              <p class="empty-state">Задач пока нет. Добавьте первую задачу.</p>
+            </div>
+          </article>
+
+          <article class="task-group" aria-labelledby="tomorrow-title">
+            <header class="group-header">
+              <h2 id="tomorrow-title">Завтра</h2>
+              <span class="task-count">0</span>
+            </header>
+            <div class="task-list" data-group="tomorrow">
+              <p class="empty-state">Задач пока нет. Добавьте первую задачу.</p>
+            </div>
+          </article>
+
+          <article class="task-group" aria-labelledby="upcoming-title">
+            <header class="group-header">
+              <h2 id="upcoming-title">Предстоящие</h2>
+              <span class="task-count">0</span>
+            </header>
+            <div class="task-list" data-group="upcoming">
+              <p class="empty-state">Задач пока нет. Добавьте первую задачу.</p>
+            </div>
+          </article>
+
+          <article class="task-group" aria-labelledby="completed-title">
+            <header class="group-header">
+              <h2 id="completed-title">Завершенные</h2>
+              <span class="task-count">0</span>
+            </header>
+            <div class="task-list" data-group="completed">
+              <p class="empty-state">Задач пока нет. Добавьте первую задачу.</p>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal" id="task-modal" hidden>
+      <div class="modal-backdrop" aria-hidden="true"></div>
+      <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+        <header class="modal-header">
+          <h2 id="task-modal-title">Новая задача</h2>
+          <button class="icon-button" id="close-modal-button" type="button" aria-label="Закрыть окно">×</button>
+        </header>
+
+        <form class="task-form" id="task-form" novalidate>
+          <p class="form-error" id="form-error" role="alert" hidden></p>
+          <label>
+            Название
+            <input type="text" name="title" placeholder="Например: подготовить отчет" maxlength="120" required>
+          </label>
+          <label>
+            Описание
+            <textarea name="description" rows="4" maxlength="2000" placeholder="Короткое описание задачи"></textarea>
+          </label>
+          <div class="form-grid">
+            <label>
+              Старт
+              <input type="datetime-local" name="startAt" required>
+            </label>
+            <label>
+              Финиш
+              <input type="datetime-local" name="finishAt" required>
+            </label>
+            <label>
+              Роль/ответственный
+              <input type="text" name="assigneeRole" placeholder="Например: менеджер">
+            </label>
+            <label>
+              Приоритет
+              <select name="priority" required>
+                <option value="medium">Средний</option>
+                <option value="high">Высокий</option>
+                <option value="low">Низкий</option>
+              </select>
+            </label>
+            <label>
+              Напоминание
+              <select name="reminder">
+                <option value="">Без напоминания</option>
+                <option value="0">В момент старта</option>
+                <option value="15">За 15 минут</option>
+                <option value="30">За 30 минут</option>
+                <option value="60">За 1 час</option>
+              </select>
+            </label>
+          </div>
+          <footer class="form-actions">
+            <button class="button" id="cancel-task-button" type="button">Отмена</button>
+            <button class="button button-primary" type="submit">Сохранить</button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  </body>
+</html>
